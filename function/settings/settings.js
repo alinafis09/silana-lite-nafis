@@ -14,31 +14,31 @@ global.setting = {
  }
 
 global.info = {
- nomerbot : '212605784394',
- pairingNumber : '212605784394',
- figlet: 'silanalite', // create a start console display
- nomorwa : '212605784394',
- nameown : 'NOUREDDINE',
- nomerown : '212717457920',
+ nomerbot : '212624052666',
+ pairingNumber : '212719558797',
+ figlet: 'SISIA BOT', // create a start console display
+ nomorwa : '212719558797',
+ nameown : 'ALI',
+ nomerown : '212719558797',
  packname : 'sticker by ',
- author : 'SILANA AI',
- namebot : '乂 SILANA AI',
- wm : 'SILANA LITE.',
+ author : 'SISIA AI',
+ namebot : '乂 SISIA AI',
+ wm : 'SISIA LITE.',
  stickpack : 'Whatsapp',
- stickauth : 'SILANA LITE',
+ stickauth : 'SISIA LITE',
  jid: '@s.whatsapp.net'
 }
 
 // Thumbnail 
 global.media = {
- ppKosong : 'https://i.ibb.co/3Fh9V6p/avatar-contact.png',
- didyou : 'https://telegra.ph/file/e40219cc8d472025f18b6.jpg',
- rulesBot : 'https://telegra.ph/file/7cd8985216ffd3c376238.jpg',
- thumbnail : 'https://files.catbox.moe/hnbuh3.jpg',
- thumb : 'https://files.catbox.moe/hnbuh3.jpg',
- logo : 'https://files.catbox.moe/hnbuh3.jpg',
+ ppKosong : 'https://ibb.co/C5F8KzKb',
+ didyou : 'https://i.postimg.cc/fWVxGsHh/JPG-0.jpg',
+ rulesBot : 'https://i.postimg.cc/fWVxGsHh/JPG-0.jpg',
+ thumbnail : 'https://files.catbox.moe/k04xjg.webp',
+ thumb : 'https://files.catbox.moe/k04xjg.webp',
+ logo : 'https://files.catbox.moe/k04xjg.webp',
  unReg : 'https://telegra.ph/file/ef02d1fdd59082d05f08d.jpg',
- registrasi : 'https://files.catbox.moe/hnbuh3.jpg',
+ registrasi : 'https://files.catbox.moe/k04xjg.webp',
  confess : 'https://telegra.ph/file/bfef7e33bc60dd2608ac6.jpg',
  access : 'https://telegra.ph/file/5c35d4a180b9074a9f11b.jpg',
  tqto : 'https://telegra.ph/file/221aba241e6ededad0fd5.jpg',
@@ -52,9 +52,9 @@ global.media = {
 }
 // Social media
 global.url = {
- sig: 'https://instagram.com/noureddine_ouafy',
- sgh:  'https://instagram.com/noureddine_ouafy',
- sgc: 'https://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A'
+ sig: 'https://instagram.com/nafis.ali9',
+ sgh:  'https://instagram.com/nafis.ali9',
+ sgc: 'https://whatsapp.com/channel/0029VbB8fdr4inolWgXQ8l2a'
 }
 // Donasi
 global.payment = {
