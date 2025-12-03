@@ -1,73 +1,77 @@
-import axios from "axios";
-import FormData from "form-data";
+// Instagram: noureddine_ouafy
+// scrape by malik
+import axios from "axios"
+import FormData from "form-data"
 
-const api = axios.create({ baseURL: "https://api4g.iloveimg.com" });
+class RemoveBg {
+  constructor() {
+    this.API_URL = "https://backrem.pi7.org/remove_bg"
+    this.HEADERS = {
+      Connection: "keep-alive",
+      "User-Agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Mobile Safari/537.36",
+      Accept: "*/*",
+      Origin: "https://image.pi7.org",
+      Referer: "https://image.pi7.org/"
+    }
+  }
 
-const getTaskId = async () => {
-  const { data: html } = await axios.get("https://www.iloveimg.com/id/hapus-latar-belakang");
-  api.defaults.headers.post["authorization"] = `Bearer ${html.match(/ey[a-zA-Z0-9?%-_/]+/g)[1]}`;
-  return html.match(/taskId = '(\w+)/)[1];
-};
+  _randName() {
+    return `id_${Date.now()}${(Math.random() + 1).toString(36).substring(7)}`
+  }
 
-const uploadImageToServer = async (imageBuffer) => {
-  const taskId = await getTaskId();
+  async run({ buffer, contentType }) {
+    try {
+      const fileSizeMB = buffer.length / (1024 * 1024)
+      if (fileSizeMB > 5) throw new Error(`❌ File size ${fileSizeMB.toFixed(2)}MB exceeds 5MB limit.`)
 
-  const fileName = Math.random().toString(36).slice(2) + ".jpg";
-  const form = new FormData();
-  form.append("name", fileName);
-  form.append("chunk", "0");
-  form.append("chunks", "1");
-  form.append("task", taskId);
-  form.append("preview", "1");
-  form.append("pdfinfo", "0");
-  form.append("pdfforms", "0");
-  form.append("pdfresetforms", "0");
-  form.append("v", "web.0");
-  form.append("file", imageBuffer, fileName);
+      const extension = contentType.split("/")[1] || "jpg"
+      const form = new FormData()
+      const fileName = `${this._randName()}.${extension}`
 
-  const reqUpload = await api.post("/v1/upload", form, { headers: form.getHeaders() }).catch((e) => e.response);
-  if (reqUpload.status !== 200) throw reqUpload.data || reqUpload.statusText;
+      form.append("myFile[]", buffer, {
+        filename: fileName,
+        contentType: contentType
+      })
 
-  return { serverFilename: reqUpload.data.server_filename, taskId };
-};
+      const result = await axios.post(this.API_URL, form, {
+        headers: {
+          ...form.getHeaders(),
+          ...this.HEADERS
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
+      })
 
-const removeBg = async (imageBuffer, responseType = "arraybuffer") => {
-  const { serverFilename, taskId } = await uploadImageToServer(imageBuffer);
-
-  const form = new FormData();
-  form.append("task", taskId);
-  form.append("server_filename", serverFilename);
-
-  const reqRmbg = await api
-    .post("/v1/removebackground", form, {
-      headers: form.getHeaders(),
-      responseType,
-    })
-    .catch((e) => e.response);
-  const type = reqRmbg.headers["content-type"];
-  if (reqRmbg.status !== 200 || !/image/.test(type))
-    throw JSON.parse(reqRmbg.data?.toString() || '{"error":{"message":"An error occurred"}}');
-
-  return reqRmbg.data;
-};
+      if (result.data?.images?.length > 0) {
+        return `https://backrem.pi7.org/${result.data.images[0].filename}`
+      } else {
+        throw new Error("❌ Failed to process image, invalid API response.")
+      }
+    } catch (error) {
+      throw error
+    }
+  }
+}
 
 let handler = async (m, { conn }) => {
-  if (!m.quoted || !m.quoted.mimetype || !m.quoted.mimetype.startsWith("image")) {
-    return m.reply("Please reply to an image with the caption `.removebg` to remove its background.");
-  }
-
-  m.reply("Processing your request...");
+  let q = m.quoted ? m.quoted : m
+  let mime = (q.msg || q).mimetype || ""
+  if (!/image\/(jpe?g|png)/.test(mime)) throw "📷 Please reply with an image and use *.removebg*"
 
   try {
-    const imageBuffer = await m.quoted.download();
-    const result = await removeBg(imageBuffer);
-    await conn.sendFile(m.chat, result, "no-bg.png", "Here's your image with the background removed!", m);
-  } catch (error) {
-    console.error("Error:", error);
-    m.reply("An error occurred while processing your request.");
-  }
-};
+    let img = await q.download() // download image buffer
+    const remover = new RemoveBg()
+    let result = await remover.run({ buffer: img, contentType: mime })
 
-handler.help = handler.command = ["removebg"];
-handler.tags = ["tools"];
-export default handler;
+    await conn.sendFile(m.chat, result, "removed.png", "✅ Background removed successfully!", m)
+  } catch (e) {
+    throw "❌ Error removing background, please try again."
+  }
+}
+
+handler.help = ["removebg"]
+handler.command = ["removebg"]
+handler.tags = ["tools"]
+handler.limit = true
+
+export default handler

@@ -1,59 +1,43 @@
-import CryptoJS from 'crypto-js'
+/*
 
-// MP3 Downloader Utility
-const mp3dl = {
-  // Function to generate a secure token
-  generateToken: () => {
-    let payload = JSON.stringify({ timestamp: Date.now() })
-    let key = 'dyhQjAtqAyTIf3PdsKcJ6nMX1suz8ksZ'
-    return CryptoJS.AES.encrypt(payload, key).toString()
-  },
+Feature : ytmp3
+Type : Plugins ESM
+Created by : https://whatsapp.com/channel/0029VbBbGUiFcow4neaist0T
+Api : sankavollerei.com
 
-  // Function to download audio from YouTube
-  download: async youtubeUrl => {
-    let json = await fetch('https://ds1.ezsrv.net/api/convert', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        url: youtubeUrl,
-        quality: 128, // Audio quality in kbps
-        trim: false,  // No trimming
-        startT: 0,    // Start time
-        endT: 0,      // End time
-        token: mp3dl.generateToken()
-      })
-    }).then(res => res.json())
-    return json
-  }
-}
+⚠️ Note ⚠️ jangan hapus wm ini banggg
 
-let handler = async (m, { conn, args }) => {
+*/
+
+import axios from 'axios'
+
+let handler = async (m, { conn, args, usedPrefix, command }) => {
   try {
-    if (!args[0]) {
-      return m.reply(
-        'Please provide a YouTube link.\n\n*Example:* .yta https://youtube.com/watch?v=7xo0Lubd3-U'
-      )
-    }
+    if (!args[0]) return m.reply(`Usage: ${usedPrefix + command} <url>`)
 
-    let { url, title, status } = await mp3dl.download(args[0])
+    await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } })
 
-    await conn.sendMessage(
-      m.chat,
-      {
-        document: { url },
-        fileName: `${title}.mp3`,
-        mimetype: 'audio/mpeg'
-      },
-      { quoted: m }
-    )
+    let url = `https://www.sankavollerei.com/download/ytmp3?apikey=planaai&url=${encodeURIComponent(args[0])}`
+    let res = await axios.get(url)
+    let json = res.data
 
-  } catch (e) {
-    m.reply(e.message)
+    if (!json.status) return m.reply(`❌ Failed to fetch data from API`)
+
+    let { title, thumbnail, download, duration } = json.result
+
+    await conn.sendMessage(m.chat, {
+      audio: { url: download },
+      mimetype: 'audio/mpeg',
+      fileName: `${title}.mp3`,
+    }, { quoted: m })
+
+  } catch (err) {
+    m.reply(`❌ Error\nError logs : ${err.message}`)
   }
 }
 
-handler.help = ['yta']
-handler.command = ['yta']
-handler.tags = ['downloader']
-handler.limit = true
+handler.help = ['yta'];
+handler.tags = ['downloader'];
+handler.command = /^yta$/i;
+
 export default handler

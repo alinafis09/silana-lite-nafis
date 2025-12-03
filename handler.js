@@ -1004,10 +1004,8 @@ export async function handler(chatUpdate) {
         if (typeof m.text !== 'string')
             m.text = ''
 
-        const isROwner = [conn.decodeJid(global.conn.user.id), ...global.owner.map(([number]) => number)].map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
-
+        const isROwner = [this.decodeJid(this.user.id), ...global.owner.map(([number]) => number)].map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
         const isOwner = isROwner || db.data.users[m.sender].owner == true
-        
         const isMods = isOwner || global.mods.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
         const isPrems = isROwner || db.data.users[m.sender].premium == true
 
@@ -1019,10 +1017,10 @@ export async function handler(chatUpdate) {
         let usedPrefix
         let _user = global.db.data && global.db.data.users && global.db.data.users[m.sender]
 
-        const groupMetadata = (m.isGroup ? ((conn.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
+        const groupMetadata = (m.isGroup ? ((this.chats[m.chat] || {}).metadata || await this.groupMetadata(m.chat).catch(_ => null)) : {}) || {}
         const participants = (m.isGroup ? groupMetadata.participants : []) || []
-        const user = (m.isGroup ? participants.find(u => conn.decodeJid(u.id) === m.sender) : {}) || {} // User Data
-        const bot = (m.isGroup ? participants.find(u => conn.decodeJid(u.id) == this.user.jid) : {}) || {} // Your Data
+        const user = (m.isGroup ? participants.find(u => this.getJid(u.id) === m.sender) : {}) || {} // User Data
+        const bot = (m.isGroup ? participants.find(u => this.getJid(u.id) == this.user.jid) : {}) || {} // Your Data
         const isRAdmin = user?.admin == 'superadmin' || false
         const isAdmin = isRAdmin || user?.admin == 'admin' || false // Is User Admin?
         const isBotAdmin = bot?.admin || false // Are you Admin?
@@ -1058,7 +1056,7 @@ export async function handler(chatUpdate) {
                     // if (typeof e === 'string') continue
                     console.error(e)
                     for (let [jid] of global.owner.filter(([number, _, isDeveloper]) => isDeveloper && number)) {
-                        let data = (await conn.onWhatsApp(jid))[0] || {}
+                        let data = (await this.onWhatsApp(jid))[0] || {}
                         if (data.exists)
                             m.reply(`❲ SYSTEM ERROR ❳
 
@@ -1083,7 +1081,7 @@ ${global.namebot}
             
                 
             const str2Regex = str => str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&')
-            let _prefix = plugin.customPrefix ? plugin.customPrefix : conn.prefix ? conn.prefix : global.prefix
+            let _prefix = plugin.customPrefix ? plugin.customPrefix : this.prefix ? this.prefix : global.prefix
             let match = (_prefix instanceof RegExp ? // RegExp Mode?
                 [[_prefix.exec(m.text), _prefix]] :
                 Array.isArray(_prefix) ? // Array?
@@ -1152,7 +1150,7 @@ ${global.namebot}
                     if (name != 'own-unbanuser.js' && user?.banned && !user?.owner)
                         return
                 }
-                if (!m.isGroup && global.db.data.settings[conn.user.jid].allakses && !Object.values((await conn.groupMetadata(setting.idgc)).participants).find(users => users.id == m.sender)) {
+                if (!m.isGroup && global.db.data.settings[this.user.jid].allakses && !Object.values((await this.groupMetadata(setting.idgc)).participants).find(users => users.id == m.sender)) {
                 global.dfail('gconly', m, this)
                 continue 
 }
@@ -1161,7 +1159,7 @@ ${global.namebot}
                 continue 
                 }
                         
-                if (!m.isGroup && global.db.data.settings[conn.user.jid].onlyprem && !isPrems) {
+                if (!m.isGroup && global.db.data.settings[this.user.jid].onlyprem && !isPrems) {
                 global.dfail('premiumonly', m, this)
                 continue 
 }
@@ -1221,12 +1219,12 @@ ${global.namebot}
                     m.reply('Ngecit -_-') // Hehehe
                 else
                     m.exp += xp
-                if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 7) {
+                /*if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 7) {
                     this.reply(m.chat, `Your limit has reached the limit\n\n•••••••••••••••••••\n\nآسفة لقد وصلتَ للحد الأدنى 🙂 
 
 البوت مبرمج على أن يُلَبِّي لك *10* طلبات في اليوم ، ثم يتوجب عليك أنذاك أن تنتظر ل 24 ساعة حتى تستفيذ من *10* أخريات .. وهكذا ... لذا دائما اشتغل بالبوت عندما تحتاجه فقط حتى لا تخسر الفرص ، \n\n*أراك غــــذا ان شــاء اللــــــــه*`, m)
                     continue // Limit habis
-                }
+                }*/
                 if (plugin.level > _user.level) {
                     this.reply(m.chat, `.المستوى المطلوب ${plugin.level} لاستخدام هذا الأمر\n*المستوى الخاص بك:* ${_user.level}`, m)
                     continue // If the level has not been reached
@@ -1257,10 +1255,10 @@ ${global.namebot}
                 }
                 try {
                     await plugin.call(this, m, extra)
-                    if (!isPrems) {
+                    /*if (!isPrems) {
                         m.limit = m.limit || plugin.limit || false
                         if (plugin.limit) return m.reply(`🔖 تم استخدام الحد: ${m.limit * 1}\nمتبقي: ${global.db.data.users[m.sender].limit - 1}`)
-                        }
+                        }*/
                 } catch (e) {
                     // Error occured
                     m.error = e
@@ -1271,7 +1269,7 @@ ${global.namebot}
                             text = text.replace(new RegExp(key, 'g'), '#HIDDEN#')
                         if (e.name)
                             for (let [jid] of global.owner.filter(([number, _, isDeveloper]) => isDeveloper && number)) {
-                                let data = (await conn.onWhatsApp(jid))[0] || {}
+                                let data = (await this.onWhatsApp(jid))[0] || {}
                                 if (data.exists)
                                     m.reply(`❲ SYSTEM REPORTS ❳
                                     
@@ -1370,7 +1368,7 @@ export async function participantsUpdate({ id, participants, action }) {
 
         case 'add':
             if (chat.welcome) {
-                let groupMetadata = await this.groupMetadata(id) || (conn.chats[id] || {}).metadata
+                let groupMetadata = await this.groupMetadata(id) || (this.chats[id] || {}).metadata
                 let member = groupMetadata.participants.length
                 let gpname = await this.getName(id)
                                               
@@ -1384,7 +1382,7 @@ export async function participantsUpdate({ id, participants, action }) {
                         
                     } catch (e) {
                     } finally {
-                        text = (chat.sWelcome || this.welcome || conn.welcome || 'Welcome, @user!').replace('@user', '@' + user.split('@')[0]).replace('@subject', await this.getName(id)).replace('@member', member).replace('@desc', groupMetadata.desc?.toString() || 'unknow')
+                        text = (chat.sWelcome || this.welcome || this.welcome || 'Welcome, @user!').replace('@user', '@' + user.split('@')[0]).replace('@subject', await this.getName(id)).replace('@member', member).replace('@desc', groupMetadata.desc?.toString() || 'unknow')
                             
 const canWel = await new canvafy.WelcomeLeave()
     .setAvatar(pp)
@@ -1461,7 +1459,7 @@ if (templ.gcImg) {
             break 
             case 'remove':
             if (chat.bye) {
-                let groupMetadata = await this.groupMetadata(id) || (conn.chats[id] || {}).metadata
+                let groupMetadata = await this.groupMetadata(id) || (this.chats[id] || {}).metadata
                 let member = groupMetadata.participants.length
                 let gpname = await this.getName(id)
                                               
@@ -1475,7 +1473,7 @@ if (templ.gcImg) {
                         
                     } catch (e) {
                     } finally {
-                        text = (chat.sBye || this.bye || conn.bye || 'Bye, @user!').replace('@user', '@' + user.split('@')[0]).replace('@subject', await this.getName(id)).replace('@member', member).replace('@desc', await groupMetadata.desc?.toString() || 'unknown')
+                        text = (chat.sBye || this.bye || this.bye || 'Bye, @user!').replace('@user', '@' + user.split('@')[0]).replace('@subject', await this.getName(id)).replace('@member', member).replace('@desc', await groupMetadata.desc?.toString() || 'unknown')
                                
 const canLea = await new canvafy.WelcomeLeave()
     .setAvatar(pp)
@@ -1562,10 +1560,10 @@ async function getMessage(key){
     }
 async function appenTextMessage(text, chatUpdate) {
         let messages = await generateWAMessage(m.chat, { text: text, mentions: m.mentionedJid }, {
-            userJid: conn.user.id,
+            userJid: this.user.id,
             quoted: m.quoted && m.quoted.fakeObj
         })
-        messages.key.fromMe = areJidsSameUser(m.sender, conn.user.id)
+        messages.key.fromMe = areJidsSameUser(m.sender, this.user.id)
         messages.key.id = m.key.id
         messages.pushName = m.pushName
         if (m.isGroup) messages.participant = m.sender
@@ -1574,7 +1572,7 @@ async function appenTextMessage(text, chatUpdate) {
             messages: [proto.WebMessageInfo.fromObject(messages)],
             type: 'append'
         }
-        conn.ev.emit('messages.upsert', msg)
+        this.ev.emit('messages.upsert', msg)
     }
     
 export async function pollUpdate(chatUpdate) {
@@ -1590,8 +1588,8 @@ for(const { key, update } of chatUpdate) {
 	                if (toCmd == undefined) return
                     var prefCmd = prefix+toCmd
 	                await appenTextMessage(prefCmd, chatUpdate)
-		await conn.delay(1000)
-		conn.sendMessage(key.remoteJid, { delete: key })
+		await this.delay(1000)
+		this.sendMessage(key.remoteJid, { delete: key })
 		}
 		
 				}
@@ -1609,26 +1607,24 @@ export async function groupsUpdate(groupsUpdate) {
         if (!id) continue
         let chats = global.db.data.chats[id], text = ''
         if (!chats?.detect) continue
-        if (groupUpdate.desc) text = (chats.sDesc || this.sDesc || conn.sDesc || '```تم تغيير الوصف إلى```\n@desc').replace('@desc', groupUpdate.desc)
-        if (groupUpdate.subject) text = (chats.sSubject || this.sSubject || conn.sSubject || '```تم تغيير الموضوع إلى```\n@subject').replace('@subject', groupUpdate.subject)
-        if (groupUpdate.icon) text = (chats.sIcon || this.sIcon || conn.sIcon || '```تم تغيير الأيقونة إلى```').replace('@icon', groupUpdate.icon)
-        if (groupUpdate.revoke) text = (chats.sRevoke || this.sRevoke || conn.sRevoke || '```تم تغيير رابط المجموعة إلى```\n@revoke').replace('@revoke', groupUpdate.revoke)
+        if (groupUpdate.desc) text = (chats.sDesc || this.sDesc || this.sDesc || '```تم تغيير الوصف إلى```\n@desc').replace('@desc', groupUpdate.desc)
+        if (groupUpdate.subject) text = (chats.sSubject || this.sSubject || this.sSubject || '```تم تغيير الموضوع إلى```\n@subject').replace('@subject', groupUpdate.subject)
+        if (groupUpdate.icon) text = (chats.sIcon || this.sIcon || this.sIcon || '```تم تغيير الأيقونة إلى```').replace('@icon', groupUpdate.icon)
+        if (groupUpdate.revoke) text = (chats.sRevoke || this.sRevoke || this.sRevoke || '```تم تغيير رابط المجموعة إلى```\n@revoke').replace('@revoke', groupUpdate.revoke)
         if (!text) continue
-        await conn.sendMessage(id, { text: text })
+        await this.sendMessage(id, { text: text })
     }
 }
 
 export async function deleteUpdate(message) {
     try {
         const { fromMe, id, remoteJid, participant} = message
-        if (fromMe)
-            return
-        let msg = this.serializeM(conn.loadMessage(id))
-        if (!msg)
-            return
+        if (fromMe) return
+        let msg = this.serializeM(this.loadMessage(id))
+        if (!msg) return
         let chat = global.db.data.chats[msg.chat]
     
-        if (chat.delete) {
+        if (chat?.delete) {
         await this.reply(remoteJid, `
 It's detected @${participant.split(`@`)[0]} has deleted the message just now > To turn off this feature, type *.disable antidelete*
 `.trim(), msg, {contextInfo: {
@@ -1646,7 +1642,7 @@ It's detected @${participant.split(`@`)[0]} has deleted the message just now > T
 global.dfail = (type, m, conn) => {
 let tag = `@${m.sender.replace(/@.+/, '')}`
 let mentionedJid = [m.sender]
-let name = conn.getName(m.sender)
+let name = this.getName(m.sender)
 
 let fkon = { key: { fromMe: false, participant: `${m.sender.split`@`[0]}@s.whatsapp.net`, ...(m.chat ? { remoteJid: '16504228206@s.whatsapp.net' } : {}) }, message: { contactMessage: { displayName: `${name}`, vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;a,;;;\nFN:${name}\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`}}}
 
@@ -1668,7 +1664,7 @@ let msg = {
         mods: 'هذه الميزة للمشرفين فقط'
         }[type]
         
-  if (msg) return conn.sendMessage(m.chat, {
+  if (msg) return this.sendMessage(m.chat, {
       text: msg, 
       contextInfo: {
       externalAdReply: {
@@ -1685,7 +1681,7 @@ let msg = {
   
 - /daftar name. age\n\n قبل ان تضغط على زر تسجيل الدخول رجاء تأكد أنك مشترك في قناتي على الواتساب \n\n https://whatsapp.com/channel/0029VaX4b6J7DAWqt3Hhu01A`}[type]
   
-  if (daftar) return conn.sendUrlImageButton(m.chat, daftar, [{name: "quick_reply", buttonParamsJson: `{"display_text": "تسجيل الدخول", "id": "@verify"}`}], wm, registrasi, fkon)
+  if (daftar) return this.sendUrlImageButton(m.chat, daftar, [{name: "quick_reply", buttonParamsJson: `{"display_text": "تسجيل الدخول", "id": "@verify"}`}], wm, registrasi, fkon)
         }
 
 function ucapan() {
