@@ -15,7 +15,7 @@ global.setting = {
 
 global.info = {
  nomerbot : '212624052666',
- pairingNumber : '212719558797',
+ pairingNumber : '212624052666',
  figlet: 'SISIA BOT', // create a start console display
  nomorwa : '212719558797',
  nameown : 'ALI',
