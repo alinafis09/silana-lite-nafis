@@ -1,52 +1,98 @@
-// @noureddine_ouafy
+import axios from "axios";
+import FormData from "form-data";
 
-import axios from 'axios'
-import FormData from 'form-data'
+/**
+ * Enhance image using ihancer API
+ */
+async function ihancer(buffer, { method = 1, size = "low" } = {}) {
+  const availableSizes = ["low", "medium", "high"];
 
-let handler = async (m, { conn, args }) => {
-  const q = m.quoted ? m.quoted : m
-  const mime = (q.msg || q).mimetype || ''
-  
-  if (!mime.startsWith('image/')) {
-    return m.reply('Please reply to an image.')
+  if (!buffer || !Buffer.isBuffer(buffer)) {
+    throw new Error("Image buffer is required");
   }
 
-  m.reply('Please wait while your image is being enhanced...')
+  if (method < 1 || method > 4) {
+    throw new Error("Available methods: 1, 2, 3, 4");
+  }
 
-  const media = await q.download()
+  if (!availableSizes.includes(size)) {
+    throw new Error(`Available sizes: ${availableSizes.join(", ")}`);
+  }
 
-  try {
-    let form = new FormData()
-    form.append('image', media, {
-      filename: 'image.png',
-      contentType: 'image/png'
-    })
-    form.append('user_id', '')
-    form.append('is_public', 'false')
+  const form = new FormData();
+  form.append("method", method.toString());
+  form.append("is_pro_version", "false");
+  form.append("is_enhancing_more", "false");
+  form.append("max_image_size", size);
+  form.append("file", buffer, `${Date.now()}.jpg`);
 
-    const { data } = await axios.post('https://picupscaler.com/api/generate/handle', form, {
+  const response = await axios.post(
+    "https://ihancer.com/api/enhance",
+    form,
+    {
       headers: {
         ...form.getHeaders(),
-        Origin: 'https://picupscaler.com',
-        Referer: 'https://picupscaler.com/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
-      }
-    })
+        "accept-encoding": "gzip",
+        host: "ihancer.com",
+        "user-agent": "Dart/3.5 (dart:io)",
+      },
+      responseType: "arraybuffer",
+    }
+  );
 
-    if (!data?.url) return m.reply('Failed to retrieve the enhanced image.')
-
-    await conn.sendMessage(m.chat, { 
-      image: { url: data.url }, 
-      caption: `✅ Image enhanced successfully!` 
-    }, { quoted: m })
-    
-  } catch (e) {
-    m.reply('Error: ' + e.message)
-  }
+  return Buffer.from(response.data);
 }
 
-handler.help = ['remini']
-handler.command = ['remini']
-handler.tags = ['tools']
-handler.limit = true
-export default handler
+let handler = async (m, { conn, usedPrefix, command }) => {
+
+  let q = m.quoted ? m.quoted : m;
+  const mime = (q.msg || q).mimetype || "";
+
+  if (!mime) {
+    throw `
+🖼️ *HD Image Enhancer*
+
+This feature enhances your image quality and makes it clearer.
+
+📌 How to use:
+1. Send or reply to an image
+2. Type: ${usedPrefix + command}
+
+Example:
+• Reply to image → ${usedPrefix + command}
+
+Supported formats:
+• JPG
+• JPEG
+• PNG
+`;
+  }
+
+  if (!/image\/(jpe?g|png)/.test(mime)) {
+    throw `❌ Unsupported file type: ${mime}\nOnly JPG and PNG images are supported.`;
+  }
+
+  m.react("⏳");
+
+  try {
+    const img = await q.download();
+
+    // Default enhancement: method 1 + high quality
+    const result = await ihancer(img, { method: 1, size: "high" });
+
+    await conn.sendFile(m.chat, result, "hd.jpg", "✨ Image successfully enhanced!", m);
+
+    m.react("✅");
+
+  } catch (err) {
+    console.error(err);
+    m.react("❌");
+    throw "Failed to enhance image. Please try again later.";
+  }
+};
+
+handler.help = handler.command = ["remini"];
+handler.tags = ["editor"];
+handler.limit = 2;
+
+export default handler;

@@ -1,81 +1,130 @@
-// @instagram.com/noureddine_ouafy
-// Plugin: Scrape Upscale (HD IMAGE)
-// Source: https://www.upscale-image.com
-// scrape by SaaOffc
-import axios from 'axios';
+import axios from 'axios'
+import * as cheerio from 'cheerio'
+import FormData from 'form-data'
 
-function formatBytes(bytes) {
-  if (bytes === 0) return '0 B';
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
-}
-
-async function upscale(imageBuffer) {
+let handler = async (m, { conn, usedPrefix, command }) => {
   try {
-    const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+    let quoted = m.quoted ? m.quoted : m
+    let mime = (quoted.msg || quoted).mimetype || ''
 
-    const response = await axios.post(
-      'https://www.upscale-image.com/api/upscale',
-      {
-        image: base64Image,
-        model: 'fal-ai/esrgan',
-        width: 1200,
-        height: 1200,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Origin: 'https://www.upscale-image.com',
-          Referer: 'https://www.upscale-image.com',
-        },
-      }
-    );
+    if (!/image/.test(mime)) {
+      return m.reply(`Send/Reply to an image with caption ${usedPrefix + command}`)
+    }
 
-    const { upscaledImageUrl, width, height, fileSize } = response.data;
-    if (!upscaledImageUrl) throw new Error('❌ لم يتم العثور على رابط الصورة المحسّنة');
+    m.reply('⏳ Processing image, please wait...')
 
-    return {
-      url: upscaledImageUrl,
-      width,
-      height,
-      fileSize: formatBytes(fileSize),
-    };
+    let media = await quoted.download()
+    let result = await hdr(media, 4)
+
+    await conn.sendFile(m.chat, result, 'hdr.png', '✅ Here is the result', m)
+
   } catch (err) {
-    throw new Error(`⚠️ فشل في تحسين الصورة:\n${err?.response?.data?.message || err.message}`);
+    console.log(err)
+    m.reply('❌ Failed to process image.')
   }
 }
 
-let handler = async (m, { conn }) => {
-  if (
-    !m.quoted ||
-    typeof m.quoted.download !== 'function' ||
-    !(m.quoted.mimetype && m.quoted.mimetype.startsWith('image/'))
-  ) {
-    return m.reply('📸 من فضلك قم بالرد على صورة لاستخدام هذا الأمر بنجاح.');
-  }
+handler.help = ['upscale-image']
+handler.tags = ['editor']
+handler.command = /^(upscale-image)$/i
+handler.premium = false
 
-  m.reply("🔄 المرجو الانتظار قليلا لا تنسى ان تتابع \ninstagram.com/noureddine_ouafy");
+export default handler
 
+
+// =============================
+// Get CSRF + Token
+// =============================
+async function getToken() {
   try {
-    const imageBuffer = await m.quoted.download();
-    const { url, width, height, fileSize } = await upscale(imageBuffer);
+    const html = await axios.get('https://www.iloveimg.com/upscale-image')
+    const $ = cheerio.load(html.data)
 
-    await conn.sendFile(
-      m.chat,
-      url,
-      'upscaled.jpg',
-      `✅ تم تحسين الصورة بنجاح:\n\n📏 الأبعاد: ${width}x${height}\n💾 الحجم: ${fileSize}`,
-      m
-    );
-  } catch (e) {
-    m.reply(e.message);
+    const script = $('script')
+      .filter((i, el) => $(el).html()?.includes('ilovepdfConfig ='))
+      .html()
+
+    const jsonS = script.split('ilovepdfConfig = ')[1].split(';')[0]
+    const json = JSON.parse(jsonS)
+
+    const csrf = $('meta[name="csrf-token"]').attr('content')
+
+    return { token: json.token, csrf }
+  } catch (err) {
+    throw new Error('Token Error: ' + err.message)
   }
-};
+}
 
-handler.help = ['upscale-image'];
-handler.tags = ['ai'];
-handler.command = ['upscale-image'];
-handler.limit = true;
 
-export default handler;
+// =============================
+// Upload Image
+// =============================
+async function uploadImage(server, headers, buffer, task) {
+  const form = new FormData()
+
+  form.append('name', 'image.jpg')
+  form.append('chunk', '0')
+  form.append('chunks', '1')
+  form.append('task', task)
+  form.append('preview', '1')
+  form.append('file', buffer, 'image.jpg')
+
+  const res = await axios.post(
+    `https://${server}.iloveimg.com/v1/upload`,
+    form,
+    {
+      headers: {
+        ...headers,
+        ...form.getHeaders(),
+      },
+    }
+  )
+
+  return res.data
+}
+
+
+// =============================
+// HDR Upscale Function
+// =============================
+async function hdr(buffer, scale = 4) {
+  const { token, csrf } = await getToken()
+
+  const servers = [
+    'api1g','api2g','api3g','api8g','api9g','api10g','api11g',
+    'api12g','api13g','api14g','api15g','api16g','api17g',
+    'api18g','api19g','api20g','api21g','api22g','api24g','api25g'
+  ]
+
+  const server = servers[Math.floor(Math.random() * servers.length)]
+
+  const task = 'r68zl88mq72xq94j2d5p66bn2z9lrbx20njsbw2qsAvgmzr11lvfhAx9kl87pp6yqgx7c8vg7sfbqnrr42qb16v0gj8jl5s0kq1kgp26mdyjjspd8c5A2wk8b4Adbm6vf5tpwbqlqdr8A9tfn7vbqvy28ylphlxdl379psxpd8r70nzs3sk1'
+
+  const headers = {
+    Authorization: 'Bearer ' + token,
+    Origin: 'https://www.iloveimg.com',
+    Cookie: '_csrf=' + csrf,
+    'User-Agent': 'Mozilla/5.0'
+  }
+
+  const upload = await uploadImage(server, headers, buffer, task)
+
+  const form = new FormData()
+  form.append('task', task)
+  form.append('server_filename', upload.server_filename)
+  form.append('scale', scale)
+
+  const res = await axios.post(
+    `https://${server}.iloveimg.com/v1/upscale`,
+    form,
+    {
+      headers: {
+        ...headers,
+        ...form.getHeaders(),
+      },
+      responseType: 'arraybuffer',
+    }
+  )
+
+  return res.data
+}
