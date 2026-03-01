@@ -1,3 +1,5 @@
+
+
 import { EventEmitter } from 'events';
 
 EventEmitter.setMaxListeners(0);
@@ -101,9 +103,9 @@ const question = (text) => new Promise((resolve) => rl.question(text, resolve))
 import NodeCache from "node-cache"
 const msgRetryCounterCache = new NodeCache()
 const msgRetryCounterMap = (MessageRetryMap) => {};
-const {
-    version
-} = await fetchLatestBaileysVersion();
+// const {
+//     version
+// } = await fetchLatestBaileysVersion();
                 
 protoType()
 serialize()
@@ -183,7 +185,7 @@ const connectionOptions = {
     }),
     auth: state,
     browser: ['Linux', 'Chrome', ''],
-    version,
+    version: [2, 3000, 1033105955],
     getMessage: async (key) => {
         let jid = jidNormalizedUser(key.remoteJid)
         let msg = await store.loadMessage(jid, key.id)
